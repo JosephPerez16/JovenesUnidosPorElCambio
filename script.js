@@ -1,43 +1,79 @@
-const showLogin = document.getElementById("showLogin");
-const showRegister = document.getElementById("showRegister");
-const loginForm = document.getElementById("loginForm");
-const registerForm = document.getElementById("registerForm");
-const authMessage = document.getElementById("authMessage");
+const DOM = {
+  showLogin: document.getElementById("showLogin"),
+  showRegister: document.getElementById("showRegister"),
+  loginForm: document.getElementById("loginForm"),
+  registerForm: document.getElementById("registerForm"),
+  authMessage: document.getElementById("authMessage"),
+  authSection: document.getElementById("authSection"),
+  dashboardSection: document.getElementById("dashboardSection"),
+  currentUserInfo: document.getElementById("currentUserInfo"),
+  logoutBtn: document.getElementById("logoutBtn"),
+  exportBtn: document.getElementById("exportBtn"),
+  voterForm: document.getElementById("voterForm"),
+  voterMessage: document.getElementById("voterMessage"),
+  votersTableBody: document.getElementById("votersTableBody"),
+  usersTableBody: document.getElementById("usersTableBody"),
+  searchResults: document.getElementById("searchResults"),
+  filteredCountBadge: document.getElementById("filteredCountBadge"),
+  userPermissionsNote: document.getElementById("userPermissionsNote"),
+  searchInput: document.getElementById("searchInput"),
+  filterProvince: document.getElementById("filterProvince"),
+  filterMunicipio: document.getElementById("filterMunicipio"),
+  filterSector: document.getElementById("filterSector"),
+  filterMesa: document.getElementById("filterMesa"),
+  filterRole: document.getElementById("filterRole"),
+  filterRegistrar: document.getElementById("filterRegistrar"),
+  clearFiltersBtn: document.getElementById("clearFiltersBtn"),
+  totalVoters: document.getElementById("totalVoters"),
+  totalUsers: document.getElementById("totalUsers"),
+  todayVoters: document.getElementById("todayVoters"),
+  activeProvinces: document.getElementById("activeProvinces"),
+  editingUserId: document.getElementById("editingUserId"),
+  registerFormTitle: document.getElementById("registerFormTitle"),
+  saveUserBtn: document.getElementById("saveUserBtn"),
+  cancelEditUserBtn: document.getElementById("cancelEditUserBtn"),
+  firstUserHint: document.getElementById("firstUserHint"),
+  registerProvince: document.getElementById("registerProvince"),
+  voterProvince: document.getElementById("voterProvince"),
+  provinceChart: document.getElementById("provinceChart"),
+  provinceRanking: document.getElementById("provinceRanking"),
+  chartSummaryBadge: document.getElementById("chartSummaryBadge")
+};
 
-const authSection = document.getElementById("authSection");
-const dashboardSection = document.getElementById("dashboardSection");
-
-const currentUserInfo = document.getElementById("currentUserInfo");
-const logoutBtn = document.getElementById("logoutBtn");
-const exportBtn = document.getElementById("exportBtn");
-
-const voterForm = document.getElementById("voterForm");
-const voterMessage = document.getElementById("voterMessage");
-const votersTableBody = document.getElementById("votersTableBody");
-const usersTableBody = document.getElementById("usersTableBody");
-const searchResults = document.getElementById("searchResults");
-const filteredCountBadge = document.getElementById("filteredCountBadge");
-const userPermissionsNote = document.getElementById("userPermissionsNote");
-
-const searchInput = document.getElementById("searchInput");
-const filterProvince = document.getElementById("filterProvince");
-const filterMunicipio = document.getElementById("filterMunicipio");
-const filterSector = document.getElementById("filterSector");
-const filterMesa = document.getElementById("filterMesa");
-const filterRole = document.getElementById("filterRole");
-const filterRegistrar = document.getElementById("filterRegistrar");
-const clearFiltersBtn = document.getElementById("clearFiltersBtn");
-
-const totalVoters = document.getElementById("totalVoters");
-const totalUsers = document.getElementById("totalUsers");
-const todayVoters = document.getElementById("todayVoters");
-const activeProvinces = document.getElementById("activeProvinces");
-
-const editingUserId = document.getElementById("editingUserId");
-const registerFormTitle = document.getElementById("registerFormTitle");
-const saveUserBtn = document.getElementById("saveUserBtn");
-const cancelEditUserBtn = document.getElementById("cancelEditUserBtn");
-const firstUserHint = document.getElementById("firstUserHint");
+const RD_PROVINCES = [
+  "Azua",
+  "Bahoruco",
+  "Barahona",
+  "Dajabón",
+  "Distrito Nacional",
+  "Duarte",
+  "Elías Piña",
+  "El Seibo",
+  "Espaillat",
+  "Hato Mayor",
+  "Hermanas Mirabal",
+  "Independencia",
+  "La Altagracia",
+  "La Romana",
+  "La Vega",
+  "María Trinidad Sánchez",
+  "Monseñor Nouel",
+  "Monte Cristi",
+  "Monte Plata",
+  "Pedernales",
+  "Peravia",
+  "Puerto Plata",
+  "Samaná",
+  "San Cristóbal",
+  "San José de Ocoa",
+  "San Juan",
+  "San Pedro de Macorís",
+  "Sánchez Ramírez",
+  "Santiago",
+  "Santiago Rodríguez",
+  "Santo Domingo",
+  "Valverde"
+];
 
 function getUsers() {
   return JSON.parse(localStorage.getItem("jupc_users")) || [];
@@ -74,6 +110,74 @@ function generateId() {
   return `id_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function normalizeCedula(value) {
+  return String(value || "").replace(/[^\d]/g, "");
+}
+
+function formatPhone(value) {
+  const digits = String(value || "").replace(/[^\d]/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+function isValidPhone(value) {
+  return String(value || "").replace(/[^\d]/g, "").length === 10;
+}
+
+function formatCedula(value) {
+  const digits = String(value || "").replace(/[^\d]/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
+}
+
+function isValidCedula(value) {
+  return String(value || "").replace(/[^\d]/g, "").length === 11;
+}
+
+function nowISO() {
+  return new Date().toISOString();
+}
+
+function formatDateDisplay(isoString) {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("es-DO", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
+}
+
+function getTodayDateKey() {
+  const today = new Date();
+  return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+}
+
+function getDateKey(isoString) {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
+function populateProvinceSelects() {
+  populateSelect(DOM.registerProvince, RD_PROVINCES, "Seleccione una provincia");
+  populateSelect(DOM.voterProvince, RD_PROVINCES, "Seleccione una provincia");
+}
+
 function normalizeUsers() {
   const users = getUsers();
   let changed = false;
@@ -86,6 +190,11 @@ function normalizeUsers() {
       changed = true;
     }
 
+    if (!updatedUser.province && RD_PROVINCES.includes(updatedUser.zone)) {
+      updatedUser.province = updatedUser.zone;
+      changed = true;
+    }
+
     return updatedUser;
   });
 
@@ -95,9 +204,7 @@ function normalizeUsers() {
     const session = getSession();
     if (session) {
       const refreshedSession = normalized.find(
-        user =>
-          user.username === session.username &&
-          user.password === session.password
+        user => user.username === session.username && user.password === session.password
       );
 
       if (refreshedSession) {
@@ -119,20 +226,20 @@ function showMessage(element, message, type) {
 
 function switchTab(mode) {
   if (mode === "login") {
-    showLogin.classList.add("active");
-    showRegister.classList.remove("active");
-    loginForm.classList.add("active");
-    registerForm.classList.remove("active");
+    DOM.showLogin.classList.add("active");
+    DOM.showRegister.classList.remove("active");
+    DOM.loginForm.classList.add("active");
+    DOM.registerForm.classList.remove("active");
   } else {
-    showRegister.classList.add("active");
-    showLogin.classList.remove("active");
-    registerForm.classList.add("active");
-    loginForm.classList.remove("active");
+    DOM.showRegister.classList.add("active");
+    DOM.showLogin.classList.remove("active");
+    DOM.registerForm.classList.add("active");
+    DOM.loginForm.classList.remove("active");
   }
 }
 
-showLogin.addEventListener("click", () => switchTab("login"));
-showRegister.addEventListener("click", () => switchTab("register"));
+DOM.showLogin.addEventListener("click", () => switchTab("login"));
+DOM.showRegister.addEventListener("click", () => switchTab("register"));
 
 function getCurrentSession() {
   return getSession();
@@ -147,54 +254,81 @@ function updateInitialHint() {
   const users = getUsers();
 
   if (users.length === 0) {
-    firstUserHint.textContent =
+    DOM.firstUserHint.textContent =
       "Como configuración inicial, el primer usuario que se cree puede establecerse como Administrador General.";
   } else {
-    firstUserHint.textContent =
+    DOM.firstUserHint.textContent =
       "El sistema permite crear usuarios con distintos niveles de acceso según la estructura operativa.";
   }
 }
 
 function resetUserForm() {
-  registerForm.reset();
-  editingUserId.value = "";
-  registerFormTitle.textContent = "Crear nuevo usuario";
-  saveUserBtn.textContent = "Crear usuario";
-  cancelEditUserBtn.classList.add("hidden");
+  DOM.registerForm.reset();
+  DOM.editingUserId.value = "";
+  DOM.registerFormTitle.textContent = "Crear nuevo usuario";
+  DOM.saveUserBtn.textContent = "Crear usuario";
+  DOM.cancelEditUserBtn.classList.add("hidden");
+  DOM.registerProvince.value = "";
 }
 
 function fillUserForm(user) {
   document.getElementById("registerName").value = user.name || "";
   document.getElementById("registerUsername").value = user.username || "";
   document.getElementById("registerRole").value = user.role || "";
-  document.getElementById("registerPhone").value = user.phone || "";
+  document.getElementById("registerPhone").value = formatPhone(user.phone || "");
   document.getElementById("registerProvince").value = user.province || "";
   document.getElementById("registerZone").value = user.zone || "";
   document.getElementById("registerPassword").value = user.password || "";
 
-  editingUserId.value = user.id || "";
-  registerFormTitle.textContent = "Editar usuario";
-  saveUserBtn.textContent = "Guardar cambios";
-  cancelEditUserBtn.classList.remove("hidden");
+  DOM.editingUserId.value = user.id || "";
+  DOM.registerFormTitle.textContent = "Editar usuario";
+  DOM.saveUserBtn.textContent = "Guardar cambios";
+  DOM.cancelEditUserBtn.classList.remove("hidden");
   switchTab("register");
 }
 
-cancelEditUserBtn.addEventListener("click", resetUserForm);
+DOM.cancelEditUserBtn.addEventListener("click", resetUserForm);
 
-registerForm.addEventListener("submit", function (e) {
+document.getElementById("registerPhone").addEventListener("input", e => {
+  e.target.value = formatPhone(e.target.value);
+});
+
+document.getElementById("voterPhone").addEventListener("input", e => {
+  e.target.value = formatPhone(e.target.value);
+});
+
+document.getElementById("voterCedula").addEventListener("input", e => {
+  e.target.value = formatCedula(e.target.value);
+});
+
+DOM.registerForm.addEventListener("submit", function (e) {
   e.preventDefault();
 
   const users = getUsers();
 
-  const name = document.getElementById("registerName").value.trim();
-  const username = document.getElementById("registerUsername").value.trim();
-  const role = document.getElementById("registerRole").value.trim();
-  const phone = document.getElementById("registerPhone").value.trim();
-  const province = document.getElementById("registerProvince").value.trim();
-  const zone = document.getElementById("registerZone").value.trim();
-  const password = document.getElementById("registerPassword").value.trim();
+  const name = normalizeText(document.getElementById("registerName").value);
+  const username = normalizeText(document.getElementById("registerUsername").value);
+  const role = normalizeText(document.getElementById("registerRole").value);
+  const phone = formatPhone(document.getElementById("registerPhone").value);
+  const province = normalizeText(document.getElementById("registerProvince").value);
+  const zone = normalizeText(document.getElementById("registerZone").value);
+  const password = normalizeText(document.getElementById("registerPassword").value);
+  const editingId = normalizeText(DOM.editingUserId.value);
 
-  const editingId = editingUserId.value.trim();
+  if (!name || !username || !role || !phone || !province || !zone || !password) {
+    showMessage(DOM.authMessage, "Complete todos los campos del usuario.", "error");
+    return;
+  }
+
+  if (!isValidPhone(phone)) {
+    showMessage(DOM.authMessage, "Ingrese un teléfono válido de 10 dígitos.", "error");
+    return;
+  }
+
+  if (password.length < 4) {
+    showMessage(DOM.authMessage, "La contraseña debe tener al menos 4 caracteres.", "error");
+    return;
+  }
 
   if (!editingId) {
     const duplicated = users.some(
@@ -202,7 +336,7 @@ registerForm.addEventListener("submit", function (e) {
     );
 
     if (duplicated) {
-      showMessage(authMessage, "Ese nombre de usuario ya existe.", "error");
+      showMessage(DOM.authMessage, "Ese nombre de usuario ya existe.", "error");
       return;
     }
 
@@ -220,7 +354,7 @@ registerForm.addEventListener("submit", function (e) {
     setUsers(users);
     resetUserForm();
     updateInitialHint();
-    showMessage(authMessage, "Usuario registrado correctamente.", "success");
+    showMessage(DOM.authMessage, "Usuario registrado correctamente.", "success");
 
     fillFilterOptions();
     renderUsers();
@@ -231,7 +365,7 @@ registerForm.addEventListener("submit", function (e) {
   const session = getCurrentSession();
 
   if (!session || !isAdminGeneral()) {
-    showMessage(authMessage, "Solo un Administrador General puede editar usuarios.", "error");
+    showMessage(DOM.authMessage, "Solo un Administrador General puede editar usuarios.", "error");
     return;
   }
 
@@ -242,7 +376,7 @@ registerForm.addEventListener("submit", function (e) {
   );
 
   if (duplicated) {
-    showMessage(authMessage, "Ese nombre de usuario ya existe.", "error");
+    showMessage(DOM.authMessage, "Ese nombre de usuario ya existe.", "error");
     return;
   }
 
@@ -280,7 +414,7 @@ registerForm.addEventListener("submit", function (e) {
   });
 
   resetUserForm();
-  showMessage(authMessage, "Usuario actualizado correctamente.", "success");
+  showMessage(DOM.authMessage, "Usuario actualizado correctamente.", "success");
 
   fillFilterOptions();
   renderAll();
@@ -290,11 +424,11 @@ registerForm.addEventListener("submit", function (e) {
   }
 });
 
-loginForm.addEventListener("submit", function (e) {
+DOM.loginForm.addEventListener("submit", function (e) {
   e.preventDefault();
 
-  const username = document.getElementById("loginUser").value.trim();
-  const password = document.getElementById("loginPassword").value.trim();
+  const username = normalizeText(document.getElementById("loginUser").value);
+  const password = normalizeText(document.getElementById("loginPassword").value);
 
   const users = getUsers();
   const user = users.find(
@@ -302,7 +436,7 @@ loginForm.addEventListener("submit", function (e) {
   );
 
   if (!user) {
-    showMessage(authMessage, "Credenciales incorrectas.", "error");
+    showMessage(DOM.authMessage, "Credenciales incorrectas.", "error");
     return;
   }
 
@@ -310,32 +444,48 @@ loginForm.addEventListener("submit", function (e) {
   loadDashboard();
 });
 
-logoutBtn.addEventListener("click", () => {
+DOM.logoutBtn.addEventListener("click", () => {
   clearSession();
-  dashboardSection.classList.add("hidden");
-  authSection.classList.remove("hidden");
+  DOM.dashboardSection.classList.add("hidden");
+  DOM.authSection.classList.remove("hidden");
 });
 
-voterForm.addEventListener("submit", function (e) {
+DOM.voterForm.addEventListener("submit", function (e) {
   e.preventDefault();
 
   const session = getCurrentSession();
   if (!session) return;
 
-  const name = document.getElementById("voterName").value.trim();
-  const cedula = document.getElementById("voterCedula").value.trim();
-  const phone = document.getElementById("voterPhone").value.trim();
-  const province = document.getElementById("voterProvince").value.trim();
-  const municipio = document.getElementById("voterMunicipio").value.trim();
-  const sector = document.getElementById("voterSector").value.trim();
-  const mesa = document.getElementById("voterMesa").value.trim();
-  const recinto = document.getElementById("voterRecinto").value.trim();
-  const notes = document.getElementById("voterNotes").value.trim();
+  const name = normalizeText(document.getElementById("voterName").value);
+  const cedula = formatCedula(document.getElementById("voterCedula").value);
+  const phone = formatPhone(document.getElementById("voterPhone").value);
+  const province = normalizeText(document.getElementById("voterProvince").value);
+  const municipio = normalizeText(document.getElementById("voterMunicipio").value);
+  const sector = normalizeText(document.getElementById("voterSector").value);
+  const mesa = normalizeText(document.getElementById("voterMesa").value);
+  const recinto = normalizeText(document.getElementById("voterRecinto").value);
+  const notes = normalizeText(document.getElementById("voterNotes").value);
+
+  if (!name || !cedula || !phone || !province || !municipio || !sector || !mesa || !recinto) {
+    showMessage(DOM.voterMessage, "Complete todos los campos requeridos.", "error");
+    return;
+  }
+
+  if (!isValidCedula(cedula)) {
+    showMessage(DOM.voterMessage, "Ingrese una cédula válida de 11 dígitos.", "error");
+    return;
+  }
+
+  if (!isValidPhone(phone)) {
+    showMessage(DOM.voterMessage, "Ingrese un teléfono válido de 10 dígitos.", "error");
+    return;
+  }
 
   const voters = getVoters();
+  const normalizedCedula = normalizeCedula(cedula);
 
-  if (voters.some(voter => voter.cedula === cedula)) {
-    showMessage(voterMessage, "Ya existe un registro con esa cédula.", "error");
+  if (voters.some(voter => normalizeCedula(voter.cedula) === normalizedCedula)) {
+    showMessage(DOM.voterMessage, "Ya existe un registro con esa cédula.", "error");
     return;
   }
 
@@ -356,12 +506,14 @@ voterForm.addEventListener("submit", function (e) {
     registeredByRole: session.role,
     registeredByProvince: session.province,
     registeredByZone: session.zone,
-    createdAt: new Date().toLocaleString("es-DO")
+    createdAtISO: nowISO(),
+    createdAt: formatDateDisplay(nowISO())
   });
 
   setVoters(voters);
-  voterForm.reset();
-  showMessage(voterMessage, "Registro guardado correctamente.", "success");
+  DOM.voterForm.reset();
+  DOM.voterProvince.value = "";
+  showMessage(DOM.voterMessage, "Registro guardado correctamente.", "success");
 
   fillFilterOptions();
   renderAll();
@@ -424,12 +576,12 @@ function getVisibleUsers() {
 function renderUsers() {
   const users = getVisibleUsers();
   const session = getCurrentSession();
-  usersTableBody.innerHTML = "";
+  DOM.usersTableBody.innerHTML = "";
 
   if (session && session.role === "Administrador General") {
-    userPermissionsNote.textContent = "Administración completa habilitada";
+    DOM.userPermissionsNote.textContent = "Administración completa habilitada";
   } else {
-    userPermissionsNote.textContent = "Visualización limitada a su propio perfil";
+    DOM.userPermissionsNote.textContent = "Visualización limitada a su propio perfil";
   }
 
   const orderedUsers = [...users].sort((a, b) => {
@@ -438,7 +590,7 @@ function renderUsers() {
   });
 
   if (!orderedUsers.length) {
-    usersTableBody.innerHTML = `
+    DOM.usersTableBody.innerHTML = `
       <tr>
         <td colspan="7">No hay usuarios para mostrar.</td>
       </tr>
@@ -454,27 +606,27 @@ function renderUsers() {
     if (session && session.role === "Administrador General") {
       actionsHtml = `
         <div class="actions-wrap">
-          <button class="action-btn edit" type="button" data-action="edit-user" data-id="${user.id}">Editar</button>
-          <button class="action-btn delete" type="button" data-action="delete-user" data-id="${user.id}">Eliminar</button>
+          <button class="action-btn edit" type="button" data-action="edit-user" data-id="${escapeHtml(user.id)}">Editar</button>
+          <button class="action-btn delete" type="button" data-action="delete-user" data-id="${escapeHtml(user.id)}">Eliminar</button>
         </div>
       `;
     }
 
     row.innerHTML = `
-      <td>${user.name}</td>
-      <td>${user.username}</td>
-      <td>${user.role}</td>
-      <td>${user.phone}</td>
-      <td>${user.province || ""}</td>
-      <td>${user.zone || ""}</td>
+      <td>${escapeHtml(user.name)}</td>
+      <td>${escapeHtml(user.username)}</td>
+      <td>${escapeHtml(user.role)}</td>
+      <td>${escapeHtml(user.phone)}</td>
+      <td>${escapeHtml(user.province || "")}</td>
+      <td>${escapeHtml(user.zone || "")}</td>
       <td class="actions-cell">${actionsHtml}</td>
     `;
 
-    usersTableBody.appendChild(row);
+    DOM.usersTableBody.appendChild(row);
   });
 }
 
-usersTableBody.addEventListener("click", function (e) {
+DOM.usersTableBody.addEventListener("click", function (e) {
   const target = e.target.closest("button");
   if (!target) return;
 
@@ -530,11 +682,11 @@ usersTableBody.addEventListener("click", function (e) {
     const updatedUsers = users.filter(item => item.id !== id);
     setUsers(updatedUsers);
 
-    if (editingUserId.value === id) {
+    if (DOM.editingUserId.value === id) {
       resetUserForm();
     }
 
-    showMessage(authMessage, "Usuario eliminado correctamente.", "success");
+    showMessage(DOM.authMessage, "Usuario eliminado correctamente.", "success");
     fillFilterOptions();
     renderAll();
   }
@@ -567,31 +719,31 @@ function fillFilterOptions() {
   const visibleUsers = getVisibleUsers();
 
   populateSelect(
-    filterProvince,
+    DOM.filterProvince,
     uniqueSortedValues(visibleVoters.map(voter => voter.province)),
     "Todas"
   );
 
   populateSelect(
-    filterMunicipio,
+    DOM.filterMunicipio,
     uniqueSortedValues(visibleVoters.map(voter => voter.municipio)),
     "Todos"
   );
 
   populateSelect(
-    filterSector,
+    DOM.filterSector,
     uniqueSortedValues(visibleVoters.map(voter => voter.sector)),
     "Todos"
   );
 
   populateSelect(
-    filterMesa,
+    DOM.filterMesa,
     uniqueSortedValues(visibleVoters.map(voter => voter.mesa)),
     "Todas"
   );
 
   populateSelect(
-    filterRegistrar,
+    DOM.filterRegistrar,
     uniqueSortedValues(visibleUsers.map(user => user.username)),
     "Todos"
   );
@@ -599,29 +751,29 @@ function fillFilterOptions() {
 
 function getFilteredVoters() {
   const voters = getVisibleVoters();
-  const q = searchInput.value.trim().toLowerCase();
-  const province = filterProvince.value;
-  const municipio = filterMunicipio.value;
-  const sector = filterSector.value;
-  const mesa = filterMesa.value;
-  const role = filterRole.value;
-  const registrar = filterRegistrar.value;
+  const q = DOM.searchInput.value.trim().toLowerCase();
+  const province = DOM.filterProvince.value;
+  const municipio = DOM.filterMunicipio.value;
+  const sector = DOM.filterSector.value;
+  const mesa = DOM.filterMesa.value;
+  const role = DOM.filterRole.value;
+  const registrar = DOM.filterRegistrar.value;
 
   return voters.filter(voter => {
     const matchesSearch =
       !q ||
-      voter.name.toLowerCase().includes(q) ||
-      voter.cedula.toLowerCase().includes(q) ||
-      voter.phone.toLowerCase().includes(q) ||
-      voter.province.toLowerCase().includes(q) ||
-      voter.municipio.toLowerCase().includes(q) ||
-      voter.sector.toLowerCase().includes(q) ||
-      voter.mesa.toLowerCase().includes(q) ||
-      voter.recinto.toLowerCase().includes(q) ||
-      voter.registeredBy.toLowerCase().includes(q) ||
-      voter.registeredByName.toLowerCase().includes(q) ||
-      voter.registeredByRole.toLowerCase().includes(q) ||
-      voter.registeredByZone.toLowerCase().includes(q);
+      String(voter.name || "").toLowerCase().includes(q) ||
+      String(voter.cedula || "").toLowerCase().includes(q) ||
+      String(voter.phone || "").toLowerCase().includes(q) ||
+      String(voter.province || "").toLowerCase().includes(q) ||
+      String(voter.municipio || "").toLowerCase().includes(q) ||
+      String(voter.sector || "").toLowerCase().includes(q) ||
+      String(voter.mesa || "").toLowerCase().includes(q) ||
+      String(voter.recinto || "").toLowerCase().includes(q) ||
+      String(voter.registeredBy || "").toLowerCase().includes(q) ||
+      String(voter.registeredByName || "").toLowerCase().includes(q) ||
+      String(voter.registeredByRole || "").toLowerCase().includes(q) ||
+      String(voter.registeredByZone || "").toLowerCase().includes(q);
 
     const matchesProvince = !province || voter.province === province;
     const matchesMunicipio = !municipio || voter.municipio === municipio;
@@ -646,48 +798,48 @@ function renderVotersTable() {
   const filtered = getFilteredVoters();
   const ordered = [...filtered].sort((a, b) => b.id - a.id);
 
-  votersTableBody.innerHTML = "";
+  DOM.votersTableBody.innerHTML = "";
 
   if (!ordered.length) {
-    votersTableBody.innerHTML = `
+    DOM.votersTableBody.innerHTML = `
       <tr>
         <td colspan="12">No hay registros para mostrar con los filtros seleccionados.</td>
       </tr>
     `;
-    filteredCountBadge.textContent = "0 resultados";
+    DOM.filteredCountBadge.textContent = "0 resultados";
     return;
   }
 
   ordered.forEach(voter => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${voter.name}</td>
-      <td>${voter.cedula}</td>
-      <td>${voter.phone}</td>
-      <td>${voter.province}</td>
-      <td>${voter.municipio}</td>
-      <td>${voter.sector}</td>
-      <td>${voter.mesa}</td>
-      <td>${voter.recinto}</td>
-      <td>${voter.registeredByName} (${voter.registeredBy})</td>
-      <td>${voter.registeredByRole}</td>
-      <td>${voter.registeredByZone}</td>
-      <td>${voter.createdAt}</td>
+      <td>${escapeHtml(voter.name)}</td>
+      <td>${escapeHtml(voter.cedula)}</td>
+      <td>${escapeHtml(voter.phone)}</td>
+      <td>${escapeHtml(voter.province)}</td>
+      <td>${escapeHtml(voter.municipio)}</td>
+      <td>${escapeHtml(voter.sector)}</td>
+      <td>${escapeHtml(voter.mesa)}</td>
+      <td>${escapeHtml(voter.recinto)}</td>
+      <td>${escapeHtml(voter.registeredByName)} (${escapeHtml(voter.registeredBy)})</td>
+      <td>${escapeHtml(voter.registeredByRole)}</td>
+      <td>${escapeHtml(voter.registeredByZone)}</td>
+      <td>${escapeHtml(voter.createdAt)}</td>
     `;
-    votersTableBody.appendChild(row);
+    DOM.votersTableBody.appendChild(row);
   });
 
-  filteredCountBadge.textContent = `${ordered.length} resultado${ordered.length !== 1 ? "s" : ""}`;
+  DOM.filteredCountBadge.textContent = `${ordered.length} resultado${ordered.length !== 1 ? "s" : ""}`;
 }
 
 function renderSearchResults() {
   const filtered = getFilteredVoters();
   const ordered = [...filtered].sort((a, b) => b.id - a.id).slice(0, 12);
 
-  searchResults.innerHTML = "";
+  DOM.searchResults.innerHTML = "";
 
   if (!ordered.length) {
-    searchResults.innerHTML = `
+    DOM.searchResults.innerHTML = `
       <div class="result-item">
         <p>No se encontraron resultados con los criterios seleccionados.</p>
       </div>
@@ -699,15 +851,15 @@ function renderSearchResults() {
     const item = document.createElement("div");
     item.className = "result-item";
     item.innerHTML = `
-      <h4>${voter.name}</h4>
-      <p><strong>Cédula:</strong> ${voter.cedula}</p>
-      <p><strong>Ubicación:</strong> ${voter.sector}, ${voter.municipio}, ${voter.province}</p>
-      <p><strong>Mesa:</strong> ${voter.mesa} | <strong>Recinto:</strong> ${voter.recinto}</p>
-      <p><strong>Registrado por:</strong> ${voter.registeredByName} (${voter.registeredBy})</p>
-      <p><strong>Rol:</strong> ${voter.registeredByRole} | <strong>Zona:</strong> ${voter.registeredByZone}</p>
-      <p><strong>Fecha:</strong> ${voter.createdAt}</p>
+      <h4>${escapeHtml(voter.name)}</h4>
+      <p><strong>Cédula:</strong> ${escapeHtml(voter.cedula)}</p>
+      <p><strong>Ubicación:</strong> ${escapeHtml(voter.sector)}, ${escapeHtml(voter.municipio)}, ${escapeHtml(voter.province)}</p>
+      <p><strong>Mesa:</strong> ${escapeHtml(voter.mesa)} | <strong>Recinto:</strong> ${escapeHtml(voter.recinto)}</p>
+      <p><strong>Registrado por:</strong> ${escapeHtml(voter.registeredByName)} (${escapeHtml(voter.registeredBy)})</p>
+      <p><strong>Rol:</strong> ${escapeHtml(voter.registeredByRole)} | <strong>Zona:</strong> ${escapeHtml(voter.registeredByZone)}</p>
+      <p><strong>Fecha:</strong> ${escapeHtml(voter.createdAt)}</p>
     `;
-    searchResults.appendChild(item);
+    DOM.searchResults.appendChild(item);
   });
 }
 
@@ -715,16 +867,16 @@ function updateStats() {
   const voters = getVisibleVoters();
   const users = getVisibleUsers();
 
-  totalVoters.textContent = voters.length;
-  totalUsers.textContent = users.length;
+  DOM.totalVoters.textContent = voters.length;
+  DOM.totalUsers.textContent = users.length;
 
-  const today = new Date().toLocaleDateString("es-DO");
+  const todayKey = getTodayDateKey();
   const todayCount = voters.filter(voter => {
-    const voterDate = new Date(voter.id).toLocaleDateString("es-DO");
-    return voterDate === today;
+    const sourceDate = voter.createdAtISO || voter.createdAt || voter.id;
+    return getDateKey(sourceDate) === todayKey;
   }).length;
 
-  todayVoters.textContent = todayCount;
+  DOM.todayVoters.textContent = todayCount;
 
   const provinces = new Set(
     voters
@@ -733,7 +885,154 @@ function updateStats() {
       .map(value => value.trim())
   );
 
-  activeProvinces.textContent = provinces.size;
+  DOM.activeProvinces.textContent = provinces.size;
+}
+
+function getProvinceCounts() {
+  const voters = getVisibleVoters();
+  const counts = {};
+
+  voters.forEach(voter => {
+    const province = normalizeText(voter.province);
+    if (!province) return;
+    counts[province] = (counts[province] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .map(([province, count]) => ({ province, count }))
+    .sort((a, b) => b.count - a.count || a.province.localeCompare(b.province, "es"));
+}
+
+function renderProvinceRanking() {
+  const provinceCounts = getProvinceCounts();
+  DOM.provinceRanking.innerHTML = "";
+
+  if (!provinceCounts.length) {
+    DOM.provinceRanking.innerHTML = `
+      <div class="result-item">
+        <p>Aún no hay provincias registradas para mostrar.</p>
+      </div>
+    `;
+    DOM.chartSummaryBadge.textContent = "0 provincias activas";
+    return;
+  }
+
+  DOM.chartSummaryBadge.textContent = `${provinceCounts.length} provincia${provinceCounts.length !== 1 ? "s" : ""} activas`;
+
+  provinceCounts.slice(0, 8).forEach((item, index) => {
+    const div = document.createElement("div");
+    div.className = "ranking-item";
+    div.innerHTML = `
+      <div class="ranking-item-left">
+        <div class="ranking-number">${index + 1}</div>
+        <div>
+          <h4>${escapeHtml(item.province)}</h4>
+          <p>Registros visibles en esta provincia</p>
+        </div>
+      </div>
+      <div class="ranking-count">${item.count}</div>
+    `;
+    DOM.provinceRanking.appendChild(div);
+  });
+}
+
+function drawProvinceChart() {
+  const canvas = DOM.provinceChart;
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const data = getProvinceCounts().slice(0, 10);
+
+  const parentWidth = canvas.parentElement.clientWidth;
+  const width = Math.max(parentWidth - 10, 300);
+  const height = 320;
+
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+  ctx.clearRect(0, 0, width, height);
+
+  if (!data.length) {
+    ctx.fillStyle = "#61758f";
+    ctx.font = "16px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.fillText("Aún no hay datos para mostrar en el gráfico.", width / 2, height / 2);
+    return;
+  }
+
+  const padding = { top: 20, right: 20, bottom: 70, left: 50 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const maxValue = Math.max(...data.map(item => item.count), 1);
+  const stepX = chartWidth / data.length;
+  const barWidth = Math.min(42, stepX * 0.56);
+
+  ctx.strokeStyle = "#e6edf6";
+  ctx.lineWidth = 1;
+
+  for (let i = 0; i <= 4; i++) {
+    const y = padding.top + (chartHeight / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(width - padding.right, y);
+    ctx.stroke();
+
+    const value = Math.round(maxValue - (maxValue / 4) * i);
+    ctx.fillStyle = "#7f91a8";
+    ctx.font = "12px Segoe UI";
+    ctx.textAlign = "right";
+    ctx.fillText(String(value), padding.left - 8, y + 4);
+  }
+
+  data.forEach((item, index) => {
+    const x = padding.left + stepX * index + (stepX - barWidth) / 2;
+    const barHeight = (item.count / maxValue) * chartHeight;
+    const y = padding.top + chartHeight - barHeight;
+
+    const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+    gradient.addColorStop(0, "#0a4a8a");
+    gradient.addColorStop(1, "#ef2d26");
+
+    ctx.fillStyle = gradient;
+    roundRect(ctx, x, y, barWidth, barHeight, 12, true, false);
+
+    ctx.fillStyle = "#102b4c";
+    ctx.font = "700 12px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.fillText(String(item.count), x + barWidth / 2, y - 8);
+
+    const label = item.province.length > 12 ? `${item.province.slice(0, 12)}…` : item.province;
+    ctx.save();
+    ctx.translate(x + barWidth / 2, padding.top + chartHeight + 16);
+    ctx.rotate(-Math.PI / 6);
+    ctx.fillStyle = "#5f728b";
+    ctx.font = "12px Segoe UI";
+    ctx.textAlign = "right";
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+  });
+}
+
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+
+function renderAnalytics() {
+  renderProvinceRanking();
+  drawProvinceChart();
 }
 
 function renderAll() {
@@ -741,53 +1040,57 @@ function renderAll() {
   renderSearchResults();
   renderUsers();
   updateStats();
+  renderAnalytics();
 }
 
 function loadDashboard() {
   const session = getCurrentSession();
   if (!session) return;
 
-  authSection.classList.add("hidden");
-  dashboardSection.classList.remove("hidden");
+  DOM.authSection.classList.add("hidden");
+  DOM.dashboardSection.classList.remove("hidden");
 
-  currentUserInfo.textContent = `${session.name} | ${session.role} | ${session.province || ""} | ${session.zone || ""}`;
+  DOM.currentUserInfo.textContent = `${session.name} | ${session.role} | ${session.province || ""} | ${session.zone || ""}`;
   fillFilterOptions();
   renderAll();
 }
 
 function clearFilters() {
-  searchInput.value = "";
-  filterProvince.value = "";
-  filterMunicipio.value = "";
-  filterSector.value = "";
-  filterMesa.value = "";
-  filterRole.value = "";
-  filterRegistrar.value = "";
+  DOM.searchInput.value = "";
+  DOM.filterProvince.value = "";
+  DOM.filterMunicipio.value = "";
+  DOM.filterSector.value = "";
+  DOM.filterMesa.value = "";
+  DOM.filterRole.value = "";
+  DOM.filterRegistrar.value = "";
   renderVotersTable();
   renderSearchResults();
+  renderAnalytics();
 }
 
 [
-  searchInput,
-  filterProvince,
-  filterMunicipio,
-  filterSector,
-  filterMesa,
-  filterRole,
-  filterRegistrar
+  DOM.searchInput,
+  DOM.filterProvince,
+  DOM.filterMunicipio,
+  DOM.filterSector,
+  DOM.filterMesa,
+  DOM.filterRole,
+  DOM.filterRegistrar
 ].forEach(element => {
   element.addEventListener("input", () => {
     renderVotersTable();
     renderSearchResults();
+    renderAnalytics();
   });
 
   element.addEventListener("change", () => {
     renderVotersTable();
     renderSearchResults();
+    renderAnalytics();
   });
 });
 
-clearFiltersBtn.addEventListener("click", clearFilters);
+DOM.clearFiltersBtn.addEventListener("click", clearFilters);
 
 function exportToExcel() {
   const session = getCurrentSession();
@@ -858,7 +1161,7 @@ function exportToExcel() {
         currentRegistrar = "";
         html += `
           <tr>
-            <td class="group" colspan="12">ROL: ${voter.registeredByRole}</td>
+            <td class="group" colspan="12">ROL: ${escapeHtml(voter.registeredByRole)}</td>
           </tr>
         `;
       }
@@ -868,7 +1171,7 @@ function exportToExcel() {
         html += `
           <tr>
             <td class="subgroup" colspan="12">
-              REGISTRADOR: ${voter.registeredByName} (${voter.registeredBy}) | ZONA: ${voter.registeredByZone} | PROVINCIA ASIGNADA: ${voter.registeredByProvince}
+              REGISTRADOR: ${escapeHtml(voter.registeredByName)} (${escapeHtml(voter.registeredBy)}) | ZONA: ${escapeHtml(voter.registeredByZone)} | PROVINCIA ASIGNADA: ${escapeHtml(voter.registeredByProvince)}
             </td>
           </tr>
         `;
@@ -877,18 +1180,18 @@ function exportToExcel() {
 
     html += `
       <tr>
-        <td>${voter.name}</td>
-        <td>${voter.cedula}</td>
-        <td>${voter.phone}</td>
-        <td>${voter.province}</td>
-        <td>${voter.municipio}</td>
-        <td>${voter.sector}</td>
-        <td>${voter.mesa}</td>
-        <td>${voter.recinto}</td>
-        <td>${voter.registeredByName} (${voter.registeredBy})</td>
-        <td>${voter.registeredByRole}</td>
-        <td>${voter.registeredByZone}</td>
-        <td>${voter.createdAt}</td>
+        <td>${escapeHtml(voter.name)}</td>
+        <td>${escapeHtml(voter.cedula)}</td>
+        <td>${escapeHtml(voter.phone)}</td>
+        <td>${escapeHtml(voter.province)}</td>
+        <td>${escapeHtml(voter.municipio)}</td>
+        <td>${escapeHtml(voter.sector)}</td>
+        <td>${escapeHtml(voter.mesa)}</td>
+        <td>${escapeHtml(voter.recinto)}</td>
+        <td>${escapeHtml(voter.registeredByName)} (${escapeHtml(voter.registeredBy)})</td>
+        <td>${escapeHtml(voter.registeredByRole)}</td>
+        <td>${escapeHtml(voter.registeredByZone)}</td>
+        <td>${escapeHtml(voter.createdAt)}</td>
       </tr>
     `;
   });
@@ -910,8 +1213,15 @@ function exportToExcel() {
   URL.revokeObjectURL(url);
 }
 
-exportBtn.addEventListener("click", exportToExcel);
+DOM.exportBtn.addEventListener("click", exportToExcel);
 
+window.addEventListener("resize", () => {
+  if (!DOM.dashboardSection.classList.contains("hidden")) {
+    drawProvinceChart();
+  }
+});
+
+populateProvinceSelects();
 normalizeUsers();
 resetUserForm();
 updateInitialHint();
@@ -919,6 +1229,6 @@ updateInitialHint();
 if (getSession()) {
   loadDashboard();
 } else {
-  authSection.classList.remove("hidden");
-  dashboardSection.classList.add("hidden");
+  DOM.authSection.classList.remove("hidden");
+  DOM.dashboardSection.classList.add("hidden");
 }

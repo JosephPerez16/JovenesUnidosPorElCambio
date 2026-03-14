@@ -16,31 +16,32 @@
     <section class="auth-section" id="authSection">
       <div class="auth-card">
         <div class="auth-side">
-          <div class="brand-logo-box">
-            <img src="Logos/JovenesUnidos1.jpg" alt="Logo JUPC" />
+          <div class="brand-top">
+            <div class="brand-logo-box large">
+              <img src="Logos/JovenesUnidos1.jpg" alt="Logo JUPC" />
+            </div>
+
+            <div class="brand-copy centered">
+              <span class="eyebrow">Plataforma territorial</span>
+              <h1>Jóvenes Unidos Por El Cambio</h1>
+              <p>
+                Sistema interno de organización, registro y consulta territorial.
+              </p>
+            </div>
           </div>
 
-          <div class="brand-copy">
-            <span class="eyebrow">Sistema interno</span>
-            <h1>Jóvenes Unidos Por El Cambio</h1>
-            <p>
-              Entorno digital orientado al registro, seguimiento y consulta de
-              información territorial para fines operativos y de organización interna.
-            </p>
-          </div>
-
-          <div class="auth-highlights">
+          <div class="auth-highlights compact">
             <div class="highlight-item">
               <span></span>
-              <small>Acceso segmentado según nivel de responsabilidad</small>
+              <small>Registro estructurado por provincia y municipio</small>
             </div>
             <div class="highlight-item">
               <span></span>
-              <small>Consolidación ordenada por provincia, municipio, sector y mesa</small>
+              <small>Acceso segmentado según rol interno</small>
             </div>
             <div class="highlight-item">
               <span></span>
-              <small>Consultas y reportes estructurados para uso interno</small>
+              <small>Visualización moderna para seguimiento operativo</small>
             </div>
           </div>
         </div>
@@ -65,8 +66,9 @@
             </div>
 
             <button type="submit" class="primary-btn">Entrar</button>
+
             <p class="helper-text">
-              Acceso disponible únicamente para usuarios autorizados.
+              Acceso permitido solo para usuarios autorizados del sistema.
             </p>
           </form>
 
@@ -110,7 +112,9 @@
             <div class="grid-2">
               <div class="input-group">
                 <label for="registerProvince">Provincia asignada</label>
-                <input type="text" id="registerProvince" placeholder="Provincia" required />
+                <select id="registerProvince" required>
+                  <option value="">Seleccione una provincia</option>
+                </select>
               </div>
 
               <div class="input-group">
@@ -178,6 +182,30 @@
         </article>
       </section>
 
+      <section class="analytics-grid">
+        <div class="card chart-card">
+          <div class="card-header row-between">
+            <div>
+              <h3>Registros por provincia</h3>
+              <p>Resumen visual de la distribución territorial registrada.</p>
+            </div>
+            <span class="badge" id="chartSummaryBadge">0 provincias activas</span>
+          </div>
+
+          <div class="chart-canvas-wrap">
+            <canvas id="provinceChart" height="320"></canvas>
+          </div>
+        </div>
+
+        <div class="card ranking-card">
+          <div class="card-header">
+            <h3>Ranking territorial</h3>
+            <p>Provincias con mayor cantidad de registros visibles.</p>
+          </div>
+          <div class="ranking-list" id="provinceRanking"></div>
+        </div>
+      </section>
+
       <section class="main-grid">
         <div class="card form-card">
           <div class="card-header">
@@ -194,19 +222,21 @@
 
               <div class="input-group">
                 <label for="voterCedula">Cédula</label>
-                <input type="text" id="voterCedula" required />
+                <input type="text" id="voterCedula" placeholder="000-0000000-0" required />
               </div>
             </div>
 
             <div class="grid-3">
               <div class="input-group">
                 <label for="voterPhone">Teléfono</label>
-                <input type="text" id="voterPhone" required />
+                <input type="text" id="voterPhone" placeholder="809-000-0000" required />
               </div>
 
               <div class="input-group">
                 <label for="voterProvince">Provincia</label>
-                <input type="text" id="voterProvince" required />
+                <select id="voterProvince" required>
+                  <option value="">Seleccione una provincia</option>
+                </select>
               </div>
 
               <div class="input-group">
