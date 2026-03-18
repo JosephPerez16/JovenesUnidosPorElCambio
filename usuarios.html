@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de usuarios | Jóvenes Unidos Por El Cambio</title>
+  <link rel="icon" href="Logos/JovenesUnidos1.jpg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-bg"></div>
+  <div class="page-accent accent-blue"></div>
+  <div class="page-accent accent-red"></div>
+
+  <main class="app-container">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="mini-logo">
+          <img src="Logos/JovenesUnidos1.jpg" alt="Logo" />
+        </div>
+
+        <div>
+          <span class="panel-tag">Panel interno</span>
+          <h2>Gestión de usuarios</h2>
+          <p id="currentUserInfo">Cargando información...</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="secondary-btn" id="backBtn" type="button">Volver al panel</button>
+        <button class="danger-btn" id="logoutBtn" type="button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span>Total de usuarios</span>
+        <h3 id="totalUsers">0</h3>
+      </article>
+
+      <article class="stat-card">
+        <span>Usuarios aprobados</span>
+        <h3 id="approvedUsers">0</h3>
+      </article>
+
+      <article class="stat-card">
+        <span>Usuarios pendientes</span>
+        <h3 id="pendingUsers">0</h3>
+      </article>
+
+      <article class="stat-card">
+        <span>Provincias asignadas</span>
+        <h3 id="activeProvinces">0</h3>
+      </article>
+    </section>
+
+    <section class="main-grid users-page-grid">
+      <div class="card form-card">
+        <div class="card-header">
+          <div class="form-head">
+            <div>
+              <h3 id="registerFormTitle">Crear nuevo usuario</h3>
+              <p>Administre accesos y perfiles autorizados del sistema.</p>
+            </div>
+            <button type="button" class="text-btn hidden" id="cancelEditUserBtn">Cancelar edición</button>
+          </div>
+        </div>
+
+        <form id="registerForm">
+          <input type="hidden" id="editingUserId" />
+
+          <div class="grid-2">
+            <div class="input-group">
+              <label for="registerName">Nombre completo</label>
+              <input type="text" id="registerName" placeholder="Nombre del usuario" required />
+            </div>
+
+            <div class="input-group">
+              <label for="registerUsername">Usuario</label>
+              <input type="text" id="registerUsername" placeholder="Nombre de usuario" required />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="input-group">
+              <label for="registerEmail">Correo personal</label>
+              <input type="email" id="registerEmail" placeholder="correo@ejemplo.com" required />
+            </div>
+
+            <div class="input-group">
+              <label for="registerPhone">Teléfono</label>
+              <input type="text" id="registerPhone" placeholder="809-000-0000" required />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="input-group">
+              <label for="registerRole">Rol</label>
+              <select id="registerRole" required>
+                <option value="">Seleccione</option>
+                <option value="Administrador General">Administrador General</option>
+                <option value="Coordinador">Coordinador</option>
+                <option value="Presidente de Zona">Presidente de Zona</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="registerProvince">Provincia asignada</label>
+              <select id="registerProvince" required>
+                <option value="">Seleccione una provincia</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="registerZone">Zona o demarcación</label>
+            <input type="text" id="registerZone" placeholder="Zona asignada" required />
+          </div>
+
+          <div class="grid-2">
+            <div class="input-group">
+              <label for="registerPassword">Contraseña</label>
+              <input type="password" id="registerPassword" placeholder="Cree una contraseña" required />
+            </div>
+
+            <div class="input-group">
+              <label for="registerPasswordConfirm">Confirmar contraseña</label>
+              <input type="password" id="registerPasswordConfirm" placeholder="Repita la contraseña" required />
+            </div>
+          </div>
+
+          <button type="submit" class="primary-btn" id="saveUserBtn">Crear usuario</button>
+
+          <p class="helper-text" id="firstUserHint">
+            El sistema permite crear usuarios con distintos niveles de acceso según la estructura operativa.
+          </p>
+        </form>
+
+        <div class="status-message" id="authMessage"></div>
+      </div>
+
+      <div class="card search-card">
+        <div class="card-header">
+          <h3>Consulta y filtros</h3>
+          <p>Filtre por nombre, usuario, rol, estado o provincia.</p>
+        </div>
+
+        <div class="input-group">
+          <label for="searchInput">Búsqueda general</label>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Nombre, usuario, correo, teléfono, zona..."
+          />
+        </div>
+
+        <div class="grid-2 compact-grid">
+          <div class="input-group">
+            <label for="filterRole">Rol</label>
+            <select id="filterRole">
+              <option value="">Todos</option>
+              <option value="Administrador General">Administrador General</option>
+              <option value="Coordinador">Coordinador</option>
+              <option value="Presidente de Zona">Presidente de Zona</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="filterStatus">Estado</label>
+            <select id="filterStatus">
+              <option value="">Todos</option>
+              <option value="Aprobado">Aprobado</option>
+              <option value="Pendiente">Pendiente</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="filterProvince">Provincia</label>
+          <select id="filterProvince">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <button class="clear-btn" id="clearFiltersBtn" type="button">Limpiar filtros</button>
+
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </section>
+
+    <section class="card users-card">
+      <div class="card-header row-between">
+        <div>
+          <h3>Usuarios del sistema</h3>
+          <p>Listado general de usuarios autorizados y pendientes.</p>
+        </div>
+        <span class="badge" id="filteredCountBadge">0 resultados</span>
+      </div>
+
+      <div class="table-wrap table-wrap-fixed">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Teléfono</th>
+              <th>Provincia</th>
+              <th>Zona</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="usuarios.js"></script>
+</body>
+</html>

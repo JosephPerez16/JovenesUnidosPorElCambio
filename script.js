@@ -9,6 +9,7 @@ const DOM = {
   currentUserInfo: document.getElementById("currentUserInfo"),
   logoutBtn: document.getElementById("logoutBtn"),
   exportBtn: document.getElementById("exportBtn"),
+  manageUsersBtn: document.getElementById("manageUsersBtn"),
   voterForm: document.getElementById("voterForm"),
   voterMessage: document.getElementById("voterMessage"),
   votersTableBody: document.getElementById("votersTableBody"),
@@ -37,7 +38,14 @@ const DOM = {
   voterProvince: document.getElementById("voterProvince"),
   provinceChart: document.getElementById("provinceChart"),
   provinceRanking: document.getElementById("provinceRanking"),
-  chartSummaryBadge: document.getElementById("chartSummaryBadge")
+  chartSummaryBadge: document.getElementById("chartSummaryBadge"),
+  usersSection: document.getElementById("usersSection"),
+  voterActionsHead: document.getElementById("voterActionsHead"),
+  editingVoterId: document.getElementById("editingVoterId"),
+  voterFormTitle: document.getElementById("voterFormTitle"),
+  voterFormDescription: document.getElementById("voterFormDescription"),
+  saveVoterBtn: document.getElementById("saveVoterBtn"),
+  cancelEditVoterBtn: document.getElementById("cancelEditVoterBtn")
 };
 
 const RD_PROVINCES = [
@@ -149,6 +157,10 @@ function isValidCedula(value) {
   return String(value || "").replace(/[^\d]/g, "").length === 11;
 }
 
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
 function nowISO() {
   return new Date().toISOString();
 }
@@ -195,6 +207,16 @@ function normalizeUsers() {
       changed = true;
     }
 
+    if (!updatedUser.email) {
+      updatedUser.email = "";
+      changed = true;
+    }
+
+    if (!updatedUser.status) {
+      updatedUser.status = "Aprobado";
+      changed = true;
+    }
+
     return updatedUser;
   });
 
@@ -203,10 +225,7 @@ function normalizeUsers() {
 
     const session = getSession();
     if (session) {
-      const refreshedSession = normalized.find(
-        user => user.username === session.username && user.password === session.password
-      );
-
+      const refreshedSession = normalized.find(user => user.id === session.id);
       if (refreshedSession) {
         setSession(refreshedSession);
       }
@@ -250,16 +269,86 @@ function isAdminGeneral() {
   return !!session && session.role === "Administrador General";
 }
 
+function updateAdminAccess() {
+  const isAdmin = isAdminGeneral();
+
+  if (DOM.manageUsersBtn) {
+    DOM.manageUsersBtn.classList.toggle("hidden", !isAdmin);
+  }
+}
+
+function goToUsersModule() {
+  const session = getCurrentSession();
+
+  if (!session || session.role !== "Administrador General") {
+    alert("Solo un Administrador General puede acceder a la gestión de usuarios.");
+    return;
+  }
+
+  window.location.href = "usuarios.html";
+}
+
+if (DOM.manageUsersBtn) {
+  DOM.manageUsersBtn.addEventListener("click", goToUsersModule);
+}
+
+function updateRoleOptions() {
+  const roleSelect = document.getElementById("registerRole");
+  if (!roleSelect) return;
+
+  const users = getUsers();
+  const session = getCurrentSession();
+  const currentValue = roleSelect.value;
+  const isFirstUser = users.length === 0;
+  const canCreateAdmin = isFirstUser || (session && session.role === "Administrador General");
+
+  roleSelect.innerHTML = `<option value="">Seleccione</option>`;
+
+  if (canCreateAdmin) {
+    roleSelect.innerHTML += `<option value="Administrador General">Administrador General</option>`;
+  }
+
+  roleSelect.innerHTML += `<option value="Coordinador">Coordinador</option>`;
+  roleSelect.innerHTML += `<option value="Presidente de Zona">Presidente de Zona</option>`;
+
+  const allowedValues = Array.from(roleSelect.options).map(option => option.value);
+  if (allowedValues.includes(currentValue)) {
+    roleSelect.value = currentValue;
+  }
+}
+
+function updateRegisterTabVisibility() {
+  const users = getUsers();
+  const session = getCurrentSession();
+  const isFirstUser = users.length === 0;
+  const shouldShowRegister = isFirstUser || !session;
+
+  if (shouldShowRegister) {
+    DOM.showRegister.classList.remove("hidden");
+  } else {
+    DOM.showRegister.classList.add("hidden");
+    switchTab("login");
+  }
+}
+
 function updateInitialHint() {
   const users = getUsers();
+  const session = getCurrentSession();
 
   if (users.length === 0) {
     DOM.firstUserHint.textContent =
       "Como configuración inicial, el primer usuario que se cree puede establecerse como Administrador General.";
-  } else {
-    DOM.firstUserHint.textContent =
-      "El sistema permite crear usuarios con distintos niveles de acceso según la estructura operativa.";
+    return;
   }
+
+  if (session && session.role === "Administrador General") {
+    DOM.firstUserHint.textContent =
+      "El módulo interno de usuarios está disponible solo para administradores generales.";
+    return;
+  }
+
+  DOM.firstUserHint.textContent =
+    "Los coordinadores y presidentes de zona se registran desde aquí y quedan pendientes de autorización.";
 }
 
 function resetUserForm() {
@@ -269,16 +358,21 @@ function resetUserForm() {
   DOM.saveUserBtn.textContent = "Crear usuario";
   DOM.cancelEditUserBtn.classList.add("hidden");
   DOM.registerProvince.value = "";
+  document.getElementById("registerPasswordConfirm").value = "";
+  updateRoleOptions();
 }
 
 function fillUserForm(user) {
+  updateRoleOptions();
   document.getElementById("registerName").value = user.name || "";
   document.getElementById("registerUsername").value = user.username || "";
   document.getElementById("registerRole").value = user.role || "";
+  document.getElementById("registerEmail").value = user.email || "";
   document.getElementById("registerPhone").value = formatPhone(user.phone || "");
   document.getElementById("registerProvince").value = user.province || "";
   document.getElementById("registerZone").value = user.zone || "";
   document.getElementById("registerPassword").value = user.password || "";
+  document.getElementById("registerPasswordConfirm").value = user.password || "";
 
   DOM.editingUserId.value = user.id || "";
   DOM.registerFormTitle.textContent = "Editar usuario";
@@ -287,7 +381,35 @@ function fillUserForm(user) {
   switchTab("register");
 }
 
+function resetVoterForm() {
+  DOM.voterForm.reset();
+  DOM.editingVoterId.value = "";
+  DOM.voterProvince.value = "";
+  DOM.voterFormTitle.textContent = "Registrar información";
+  DOM.voterFormDescription.textContent = "Complete los datos requeridos de forma organizada y precisa.";
+  DOM.saveVoterBtn.textContent = "Guardar registro";
+  DOM.cancelEditVoterBtn.classList.add("hidden");
+}
+
+function fillVoterForm(voter) {
+  document.getElementById("voterName").value = voter.name || "";
+  document.getElementById("voterCedula").value = formatCedula(voter.cedula || "");
+  document.getElementById("voterPhone").value = formatPhone(voter.phone || "");
+  document.getElementById("voterProvince").value = voter.province || "";
+  document.getElementById("voterMunicipio").value = voter.municipio || "";
+  document.getElementById("voterSector").value = voter.sector || "";
+  document.getElementById("voterMesa").value = voter.mesa || "";
+  document.getElementById("voterRecinto").value = voter.recinto || "";
+
+  DOM.editingVoterId.value = voter.id || "";
+  DOM.voterFormTitle.textContent = "Editar registro";
+  DOM.voterFormDescription.textContent = "Solo el Administrador General puede modificar un registro existente.";
+  DOM.saveVoterBtn.textContent = "Guardar cambios";
+  DOM.cancelEditVoterBtn.classList.remove("hidden");
+}
+
 DOM.cancelEditUserBtn.addEventListener("click", resetUserForm);
+DOM.cancelEditVoterBtn.addEventListener("click", resetVoterForm);
 
 document.getElementById("registerPhone").addEventListener("input", e => {
   e.target.value = formatPhone(e.target.value);
@@ -305,18 +427,26 @@ DOM.registerForm.addEventListener("submit", function (e) {
   e.preventDefault();
 
   const users = getUsers();
+  const session = getCurrentSession();
 
   const name = normalizeText(document.getElementById("registerName").value);
   const username = normalizeText(document.getElementById("registerUsername").value);
   const role = normalizeText(document.getElementById("registerRole").value);
+  const email = normalizeText(document.getElementById("registerEmail").value).toLowerCase();
   const phone = formatPhone(document.getElementById("registerPhone").value);
   const province = normalizeText(document.getElementById("registerProvince").value);
   const zone = normalizeText(document.getElementById("registerZone").value);
   const password = normalizeText(document.getElementById("registerPassword").value);
+  const passwordConfirm = normalizeText(document.getElementById("registerPasswordConfirm").value);
   const editingId = normalizeText(DOM.editingUserId.value);
 
-  if (!name || !username || !role || !phone || !province || !zone || !password) {
+  if (!name || !username || !role || !email || !phone || !province || !zone || !password || !passwordConfirm) {
     showMessage(DOM.authMessage, "Complete todos los campos del usuario.", "error");
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    showMessage(DOM.authMessage, "Ingrese un correo personal válido.", "error");
     return;
   }
 
@@ -330,31 +460,64 @@ DOM.registerForm.addEventListener("submit", function (e) {
     return;
   }
 
+  if (password !== passwordConfirm) {
+    showMessage(DOM.authMessage, "Las contraseñas no coinciden.", "error");
+    return;
+  }
+
   if (!editingId) {
-    const duplicated = users.some(
+    const duplicatedUsername = users.some(
       user => user.username.toLowerCase() === username.toLowerCase()
     );
+    const duplicatedEmail = users.some(
+      user => String(user.email || "").toLowerCase() === email
+    );
 
-    if (duplicated) {
+    if (duplicatedUsername) {
       showMessage(DOM.authMessage, "Ese nombre de usuario ya existe.", "error");
       return;
     }
+
+    if (duplicatedEmail) {
+      showMessage(DOM.authMessage, "Ese correo ya está registrado.", "error");
+      return;
+    }
+
+    const firstUser = users.length === 0;
+    const createdByAdmin = !!session && isAdminGeneral();
+
+    if (!firstUser && role === "Administrador General" && !createdByAdmin) {
+      showMessage(DOM.authMessage, "Solo un Administrador General puede crear otro Administrador General.", "error");
+      return;
+    }
+
+    const userStatus = firstUser || createdByAdmin ? "Aprobado" : "Pendiente";
+    const roleToSave = firstUser ? "Administrador General" : role;
 
     users.push({
       id: generateId(),
       name,
       username,
-      role,
+      role: roleToSave,
+      email,
       phone,
       province,
       zone,
-      password
+      password,
+      status: userStatus
     });
 
     setUsers(users);
     resetUserForm();
     updateInitialHint();
-    showMessage(DOM.authMessage, "Usuario registrado correctamente.", "success");
+    updateRegisterTabVisibility();
+    updateAdminAccess();
+
+    if (userStatus === "Pendiente") {
+      showMessage(DOM.authMessage, "Usuario registrado en estado pendiente de aprobación.", "success");
+    } else {
+      showMessage(DOM.authMessage, "Usuario registrado correctamente.", "success");
+    }
 
     fillFilterOptions();
     renderUsers();
@@ -362,21 +525,25 @@ DOM.registerForm.addEventListener("submit", function (e) {
     return;
   }
 
-  const session = getCurrentSession();
-
   if (!session || !isAdminGeneral()) {
     showMessage(DOM.authMessage, "Solo un Administrador General puede editar usuarios.", "error");
     return;
   }
 
-  const duplicated = users.some(
-    user =>
-      user.username.toLowerCase() === username.toLowerCase() &&
-      user.id !== editingId
+  const duplicatedUsername = users.some(
+    user => user.username.toLowerCase() === username.toLowerCase() && user.id !== editingId
+  );
+  const duplicatedEmail = users.some(
+    user => String(user.email || "").toLowerCase() === email && user.id !== editingId
   );
 
-  if (duplicated) {
+  if (duplicatedUsername) {
     showMessage(DOM.authMessage, "Ese nombre de usuario ya existe.", "error");
+    return;
+  }
+
+  if (duplicatedEmail) {
+    showMessage(DOM.authMessage, "Ese correo ya está registrado.", "error");
     return;
   }
 
@@ -388,6 +555,7 @@ DOM.registerForm.addEventListener("submit", function (e) {
       name,
       username,
       role,
+      email,
       phone,
       province,
       zone,
@@ -418,6 +586,8 @@ DOM.registerForm.addEventListener("submit", function (e) {
 
   fillFilterOptions();
   renderAll();
+  updateRegisterTabVisibility();
+  updateAdminAccess();
 
   if (getSession()) {
     loadDashboard();
@@ -440,12 +610,26 @@ DOM.loginForm.addEventListener("submit", function (e) {
     return;
   }
 
+  if (user.status && user.status !== "Aprobado") {
+    showMessage(DOM.authMessage, "Tu usuario aún está pendiente de aprobación.", "error");
+    return;
+  }
+
   setSession(user);
+  updateRegisterTabVisibility();
+  updateRoleOptions();
+  updateInitialHint();
+  updateAdminAccess();
   loadDashboard();
 });
 
 DOM.logoutBtn.addEventListener("click", () => {
   clearSession();
+  resetVoterForm();
+  updateRegisterTabVisibility();
+  updateRoleOptions();
+  updateInitialHint();
+  updateAdminAccess();
   DOM.dashboardSection.classList.add("hidden");
   DOM.authSection.classList.remove("hidden");
 });
@@ -464,7 +648,7 @@ DOM.voterForm.addEventListener("submit", function (e) {
   const sector = normalizeText(document.getElementById("voterSector").value);
   const mesa = normalizeText(document.getElementById("voterMesa").value);
   const recinto = normalizeText(document.getElementById("voterRecinto").value);
-  const notes = normalizeText(document.getElementById("voterNotes").value);
+  const editingId = normalizeText(DOM.editingVoterId.value);
 
   if (!name || !cedula || !phone || !province || !municipio || !sector || !mesa || !recinto) {
     showMessage(DOM.voterMessage, "Complete todos los campos requeridos.", "error");
@@ -482,39 +666,84 @@ DOM.voterForm.addEventListener("submit", function (e) {
   }
 
   const voters = getVoters();
-  const normalizedCedula = normalizeCedula(cedula);
+  const normalizedCedulaValue = normalizeCedula(cedula);
 
-  if (voters.some(voter => normalizeCedula(voter.cedula) === normalizedCedula)) {
-    showMessage(DOM.voterMessage, "Ya existe un registro con esa cédula.", "error");
+  if (!editingId) {
+    if (voters.some(voter => normalizeCedula(voter.cedula) === normalizedCedulaValue)) {
+      showMessage(DOM.voterMessage, "Ya existe un registro con esa cédula.", "error");
+      return;
+    }
+
+    const createdAtISO = nowISO();
+
+    voters.push({
+      id: generateId(),
+      name,
+      cedula,
+      phone,
+      province,
+      municipio,
+      sector,
+      mesa,
+      recinto,
+      registeredById: session.id,
+      registeredBy: session.username,
+      registeredByName: session.name,
+      registeredByRole: session.role,
+      registeredByProvince: session.province,
+      registeredByZone: session.zone,
+      createdAtISO,
+      createdAt: formatDateDisplay(createdAtISO),
+      updatedAtISO: createdAtISO,
+      updatedAt: formatDateDisplay(createdAtISO)
+    });
+
+    setVoters(voters);
+    resetVoterForm();
+    showMessage(DOM.voterMessage, "Registro guardado correctamente.", "success");
+
+    fillFilterOptions();
+    renderAll();
     return;
   }
 
-  voters.push({
-    id: Date.now(),
-    name,
-    cedula,
-    phone,
-    province,
-    municipio,
-    sector,
-    mesa,
-    recinto,
-    notes,
-    registeredById: session.id,
-    registeredBy: session.username,
-    registeredByName: session.name,
-    registeredByRole: session.role,
-    registeredByProvince: session.province,
-    registeredByZone: session.zone,
-    createdAtISO: nowISO(),
-    createdAt: formatDateDisplay(nowISO())
+  if (!isAdminGeneral()) {
+    showMessage(DOM.voterMessage, "Solo un Administrador General puede editar registros.", "error");
+    return;
+  }
+
+  const duplicatedCedula = voters.some(
+    voter => normalizeCedula(voter.cedula) === normalizedCedulaValue && voter.id !== editingId
+  );
+
+  if (duplicatedCedula) {
+    showMessage(DOM.voterMessage, "Ya existe otro registro con esa cédula.", "error");
+    return;
+  }
+
+  const updatedAtISO = nowISO();
+
+  const updatedVoters = voters.map(voter => {
+    if (voter.id !== editingId) return voter;
+
+    return {
+      ...voter,
+      name,
+      cedula,
+      phone,
+      province,
+      municipio,
+      sector,
+      mesa,
+      recinto,
+      updatedAtISO,
+      updatedAt: formatDateDisplay(updatedAtISO)
+    };
   });
 
-  setVoters(voters);
-  DOM.voterForm.reset();
-  DOM.voterProvince.value = "";
-  showMessage(DOM.voterMessage, "Registro guardado correctamente.", "success");
-
+  setVoters(updatedVoters);
+  resetVoterForm();
+  showMessage(DOM.voterMessage, "Registro actualizado correctamente.", "success");
   fillFilterOptions();
   renderAll();
 });
@@ -563,14 +792,10 @@ function getVisibleUsers() {
   if (!session) return [];
 
   if (session.role === "Administrador General") {
-    return users;
+    return users.filter(user => user.role !== "Administrador General");
   }
 
-  if (session.id) {
-    return users.filter(user => user.id === session.id);
-  }
-
-  return users.filter(user => user.username === session.username);
+  return [];
 }
 
 function renderUsers() {
@@ -579,10 +804,17 @@ function renderUsers() {
   DOM.usersTableBody.innerHTML = "";
 
   if (session && session.role === "Administrador General") {
-    DOM.userPermissionsNote.textContent = "Administración completa habilitada";
+    DOM.userPermissionsNote.textContent = "Gestión de coordinadores y presidentes de zona";
   } else {
-    DOM.userPermissionsNote.textContent = "Visualización limitada a su propio perfil";
+    DOM.userPermissionsNote.textContent = "Sin acceso a perfiles administrativos";
   }
+
+  if (!session || session.role !== "Administrador General") {
+    DOM.usersSection.classList.add("section-hidden");
+    return;
+  }
+
+  DOM.usersSection.classList.remove("section-hidden");
 
   const orderedUsers = [...users].sort((a, b) => {
     if (a.role !== b.role) return a.role.localeCompare(b.role, "es");
@@ -592,7 +824,7 @@ function renderUsers() {
   if (!orderedUsers.length) {
     DOM.usersTableBody.innerHTML = `
       <tr>
-        <td colspan="7">No hay usuarios para mostrar.</td>
+        <td colspan="9">No hay usuarios para mostrar.</td>
       </tr>
     `;
     return;
@@ -600,12 +832,19 @@ function renderUsers() {
 
   orderedUsers.forEach(user => {
     const row = document.createElement("tr");
+    const statusClass = String(user.status || "Aprobado").toLowerCase();
 
-    let actionsHtml = `<span class="readonly-note">Solo lectura</span>`;
+    let actionsHtml = `
+      <div class="actions-wrap">
+        <button class="action-btn edit" type="button" data-action="edit-user" data-id="${escapeHtml(user.id)}">Editar</button>
+        <button class="action-btn delete" type="button" data-action="delete-user" data-id="${escapeHtml(user.id)}">Eliminar</button>
+      </div>
+    `;
 
-    if (session && session.role === "Administrador General") {
+    if (user.status === "Pendiente") {
       actionsHtml = `
         <div class="actions-wrap">
+          <button class="action-btn approve" type="button" data-action="approve-user" data-id="${escapeHtml(user.id)}">Aprobar</button>
           <button class="action-btn edit" type="button" data-action="edit-user" data-id="${escapeHtml(user.id)}">Editar</button>
           <button class="action-btn delete" type="button" data-action="delete-user" data-id="${escapeHtml(user.id)}">Eliminar</button>
         </div>
@@ -615,10 +854,12 @@ function renderUsers() {
     row.innerHTML = `
       <td>${escapeHtml(user.name)}</td>
       <td>${escapeHtml(user.username)}</td>
+      <td>${escapeHtml(user.email || "")}</td>
       <td>${escapeHtml(user.role)}</td>
       <td>${escapeHtml(user.phone)}</td>
       <td>${escapeHtml(user.province || "")}</td>
       <td>${escapeHtml(user.zone || "")}</td>
+      <td><span class="status-pill ${escapeHtml(statusClass)}">${escapeHtml(user.status || "Aprobado")}</span></td>
       <td class="actions-cell">${actionsHtml}</td>
     `;
 
@@ -649,6 +890,18 @@ DOM.usersTableBody.addEventListener("click", function (e) {
     return;
   }
 
+  if (action === "approve-user") {
+    const updatedUsers = users.map(item => {
+      if (item.id !== id) return item;
+      return { ...item, status: "Aprobado" };
+    });
+    setUsers(updatedUsers);
+    showMessage(DOM.authMessage, "Usuario aprobado correctamente.", "success");
+    renderUsers();
+    updateStats();
+    return;
+  }
+
   if (action === "edit-user") {
     fillUserForm(user);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -658,13 +911,6 @@ DOM.usersTableBody.addEventListener("click", function (e) {
   if (action === "delete-user") {
     if (session.id === id) {
       alert("No puedes eliminar el usuario con el que estás autenticado.");
-      return;
-    }
-
-    const adminsCount = users.filter(item => item.role === "Administrador General").length;
-
-    if (user.role === "Administrador General" && adminsCount === 1) {
-      alert("No puedes eliminar el único Administrador General del sistema.");
       return;
     }
 
@@ -689,6 +935,8 @@ DOM.usersTableBody.addEventListener("click", function (e) {
     showMessage(DOM.authMessage, "Usuario eliminado correctamente.", "success");
     fillFilterOptions();
     renderAll();
+    updateRegisterTabVisibility();
+    updateAdminAccess();
   }
 });
 
@@ -716,7 +964,8 @@ function uniqueSortedValues(values) {
 
 function fillFilterOptions() {
   const visibleVoters = getVisibleVoters();
-  const visibleUsers = getVisibleUsers();
+  const allUsers = getUsers();
+  const session = getCurrentSession();
 
   populateSelect(
     DOM.filterProvince,
@@ -742,9 +991,17 @@ function fillFilterOptions() {
     "Todas"
   );
 
+  let registrarUsers = [];
+
+  if (session && session.role === "Administrador General") {
+    registrarUsers = allUsers.filter(user => user.status === "Aprobado");
+  } else if (session) {
+    registrarUsers = allUsers.filter(user => user.id === session.id);
+  }
+
   populateSelect(
     DOM.filterRegistrar,
-    uniqueSortedValues(visibleUsers.map(user => user.username)),
+    uniqueSortedValues(registrarUsers.map(user => user.username)),
     "Todos"
   );
 }
@@ -796,14 +1053,24 @@ function getFilteredVoters() {
 
 function renderVotersTable() {
   const filtered = getFilteredVoters();
-  const ordered = [...filtered].sort((a, b) => b.id - a.id);
+  const ordered = [...filtered].sort((a, b) => {
+    const aDate = new Date(a.createdAtISO || 0).getTime();
+    const bDate = new Date(b.createdAtISO || 0).getTime();
+    return bDate - aDate;
+  });
 
   DOM.votersTableBody.innerHTML = "";
+
+  if (isAdminGeneral()) {
+    DOM.voterActionsHead.textContent = "Acciones";
+  } else {
+    DOM.voterActionsHead.textContent = "Estado";
+  }
 
   if (!ordered.length) {
     DOM.votersTableBody.innerHTML = `
       <tr>
-        <td colspan="12">No hay registros para mostrar con los filtros seleccionados.</td>
+        <td colspan="13">No hay registros para mostrar con los filtros seleccionados.</td>
       </tr>
     `;
     DOM.filteredCountBadge.textContent = "0 resultados";
@@ -812,6 +1079,16 @@ function renderVotersTable() {
 
   ordered.forEach(voter => {
     const row = document.createElement("tr");
+
+    const actionsHtml = isAdminGeneral()
+      ? `
+        <div class="actions-wrap">
+          <button class="action-btn edit" type="button" data-action="edit-voter" data-id="${escapeHtml(voter.id)}">Editar</button>
+          <button class="action-btn delete" type="button" data-action="delete-voter" data-id="${escapeHtml(voter.id)}">Eliminar</button>
+        </div>
+      `
+      : `<span class="readonly-note">Solo lectura</span>`;
+
     row.innerHTML = `
       <td>${escapeHtml(voter.name)}</td>
       <td>${escapeHtml(voter.cedula)}</td>
@@ -824,7 +1101,8 @@ function renderVotersTable() {
       <td>${escapeHtml(voter.registeredByName)} (${escapeHtml(voter.registeredBy)})</td>
       <td>${escapeHtml(voter.registeredByRole)}</td>
       <td>${escapeHtml(voter.registeredByZone)}</td>
-      <td>${escapeHtml(voter.createdAt)}</td>
+      <td>${escapeHtml(voter.updatedAt || voter.createdAt)}</td>
+      <td class="actions-cell">${actionsHtml}</td>
     `;
     DOM.votersTableBody.appendChild(row);
   });
@@ -832,9 +1110,60 @@ function renderVotersTable() {
   DOM.filteredCountBadge.textContent = `${ordered.length} resultado${ordered.length !== 1 ? "s" : ""}`;
 }
 
+DOM.votersTableBody.addEventListener("click", function (e) {
+  const target = e.target.closest("button");
+  if (!target) return;
+
+  const action = target.dataset.action;
+  const id = target.dataset.id;
+
+  if (!action || !id) return;
+
+  if (!isAdminGeneral()) {
+    alert("Solo un Administrador General puede gestionar registros.");
+    return;
+  }
+
+  const voters = getVoters();
+  const voter = voters.find(item => item.id === id);
+
+  if (!voter) {
+    alert("No se encontró el registro.");
+    return;
+  }
+
+  if (action === "edit-voter") {
+    fillVoterForm(voter);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  if (action === "delete-voter") {
+    const confirmed = confirm("¿Deseas eliminar este registro?");
+    if (!confirmed) return;
+
+    const updatedVoters = voters.filter(item => item.id !== id);
+    setVoters(updatedVoters);
+
+    if (DOM.editingVoterId.value === id) {
+      resetVoterForm();
+    }
+
+    showMessage(DOM.voterMessage, "Registro eliminado correctamente.", "success");
+    fillFilterOptions();
+    renderAll();
+  }
+});
+
 function renderSearchResults() {
   const filtered = getFilteredVoters();
-  const ordered = [...filtered].sort((a, b) => b.id - a.id).slice(0, 12);
+  const ordered = [...filtered]
+    .sort((a, b) => {
+      const aDate = new Date(a.createdAtISO || 0).getTime();
+      const bDate = new Date(b.createdAtISO || 0).getTime();
+      return bDate - aDate;
+    })
+    .slice(0, 12);
 
   DOM.searchResults.innerHTML = "";
 
@@ -857,7 +1186,7 @@ function renderSearchResults() {
       <p><strong>Mesa:</strong> ${escapeHtml(voter.mesa)} | <strong>Recinto:</strong> ${escapeHtml(voter.recinto)}</p>
       <p><strong>Registrado por:</strong> ${escapeHtml(voter.registeredByName)} (${escapeHtml(voter.registeredBy)})</p>
       <p><strong>Rol:</strong> ${escapeHtml(voter.registeredByRole)} | <strong>Zona:</strong> ${escapeHtml(voter.registeredByZone)}</p>
-      <p><strong>Fecha:</strong> ${escapeHtml(voter.createdAt)}</p>
+      <p><strong>Última fecha:</strong> ${escapeHtml(voter.updatedAt || voter.createdAt)}</p>
     `;
     DOM.searchResults.appendChild(item);
   });
@@ -1051,6 +1380,14 @@ function loadDashboard() {
   DOM.dashboardSection.classList.remove("hidden");
 
   DOM.currentUserInfo.textContent = `${session.name} | ${session.role} | ${session.province || ""} | ${session.zone || ""}`;
+
+  if (session.role === "Administrador General") {
+    DOM.usersSection.classList.remove("section-hidden");
+  } else {
+    DOM.usersSection.classList.add("section-hidden");
+  }
+
+  updateAdminAccess();
   fillFilterOptions();
   renderAll();
 }
@@ -1094,7 +1431,15 @@ DOM.clearFiltersBtn.addEventListener("click", clearFilters);
 
 function exportToExcel() {
   const session = getCurrentSession();
-  const voters = getFilteredVoters();
+
+  if (!session) {
+    alert("Debes iniciar sesión.");
+    return;
+  }
+
+  const voters = session.role === "Administrador General"
+    ? getFilteredVoters()
+    : getFilteredVoters().filter(voter => voter.registeredById === session.id);
 
   if (!voters.length) {
     alert("No hay datos para exportar.");
@@ -1155,7 +1500,7 @@ function exportToExcel() {
   let currentRegistrar = "";
 
   ordered.forEach(voter => {
-    if (session && session.role === "Administrador General") {
+    if (session.role === "Administrador General") {
       if (voter.registeredByRole !== currentRole) {
         currentRole = voter.registeredByRole;
         currentRegistrar = "";
@@ -1191,7 +1536,7 @@ function exportToExcel() {
         <td>${escapeHtml(voter.registeredByName)} (${escapeHtml(voter.registeredBy)})</td>
         <td>${escapeHtml(voter.registeredByRole)}</td>
         <td>${escapeHtml(voter.registeredByZone)}</td>
-        <td>${escapeHtml(voter.createdAt)}</td>
+        <td>${escapeHtml(voter.updatedAt || voter.createdAt)}</td>
       </tr>
     `;
   });
@@ -1206,7 +1551,9 @@ function exportToExcel() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "reporte_interno_registros.xls";
+  link.download = session.role === "Administrador General"
+    ? "reporte_general_registros.xls"
+    : `mis_registros_${session.username}.xls`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -1223,8 +1570,12 @@ window.addEventListener("resize", () => {
 
 populateProvinceSelects();
 normalizeUsers();
+updateRegisterTabVisibility();
+updateRoleOptions();
 resetUserForm();
+resetVoterForm();
 updateInitialHint();
+updateAdminAccess();
 
 if (getSession()) {
   loadDashboard();

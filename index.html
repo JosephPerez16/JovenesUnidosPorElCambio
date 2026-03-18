@@ -29,21 +29,6 @@
               </p>
             </div>
           </div>
-
-          <div class="auth-highlights compact">
-            <div class="highlight-item">
-              <span></span>
-              <small>Registro estructurado por provincia y municipio</small>
-            </div>
-            <div class="highlight-item">
-              <span></span>
-              <small>Acceso segmentado según rol interno</small>
-            </div>
-            <div class="highlight-item">
-              <span></span>
-              <small>Visualización moderna para seguimiento operativo</small>
-            </div>
-          </div>
         </div>
 
         <div class="auth-main">
@@ -94,13 +79,8 @@
 
             <div class="grid-2">
               <div class="input-group">
-                <label for="registerRole">Rol</label>
-                <select id="registerRole" required>
-                  <option value="">Seleccione</option>
-                  <option value="Administrador General">Administrador General</option>
-                  <option value="Coordinador">Coordinador</option>
-                  <option value="Presidente de Zona">Presidente de Zona</option>
-                </select>
+                <label for="registerEmail">Correo personal</label>
+                <input type="email" id="registerEmail" placeholder="correo@ejemplo.com" required />
               </div>
 
               <div class="input-group">
@@ -111,27 +91,48 @@
 
             <div class="grid-2">
               <div class="input-group">
+                <label for="registerRole">Rol</label>
+                <select id="registerRole" required>
+                  <option value="">Seleccione</option>
+                  <option value="Administrador General">Administrador General</option>
+                  <option value="Coordinador">Coordinador</option>
+                  <option value="Presidente de Zona">Presidente de Zona</option>
+                </select>
+              </div>
+
+              <div class="input-group">
                 <label for="registerProvince">Provincia asignada</label>
                 <select id="registerProvince" required>
                   <option value="">Seleccione una provincia</option>
                 </select>
               </div>
-
-              <div class="input-group">
-                <label for="registerZone">Zona o demarcación</label>
-                <input type="text" id="registerZone" placeholder="Zona asignada" required />
-              </div>
             </div>
 
             <div class="input-group">
-              <label for="registerPassword">Contraseña</label>
-              <input type="password" id="registerPassword" placeholder="Cree una contraseña" required />
+              <label for="registerZone">Zona o demarcación</label>
+              <input type="text" id="registerZone" placeholder="Zona asignada" required />
+            </div>
+
+            <div class="grid-2">
+              <div class="input-group">
+                <label for="registerPassword">Contraseña</label>
+                <input type="password" id="registerPassword" placeholder="Cree una contraseña" required />
+              </div>
+
+              <div class="input-group">
+                <label for="registerPasswordConfirm">Confirmar contraseña</label>
+                <input type="password" id="registerPasswordConfirm" placeholder="Repita la contraseña" required />
+              </div>
             </div>
 
             <button type="submit" class="primary-btn" id="saveUserBtn">Crear usuario</button>
 
             <p class="helper-text" id="firstUserHint">
               El sistema permite crear usuarios con distintos niveles de acceso según la estructura operativa.
+            </p>
+
+            <p class="security-note">
+              En la versión final, los nuevos usuarios deberán quedar sujetos a aprobación por administradores generales.
             </p>
           </form>
 
@@ -155,6 +156,7 @@
         </div>
 
         <div class="topbar-actions">
+          <button class="secondary-btn hidden" id="manageUsersBtn" type="button">Gestionar usuarios</button>
           <button class="secondary-btn" id="exportBtn" type="button">Descargar Excel</button>
           <button class="danger-btn" id="logoutBtn" type="button">Cerrar sesión</button>
         </div>
@@ -209,11 +211,18 @@
       <section class="main-grid">
         <div class="card form-card">
           <div class="card-header">
-            <h3>Registrar información</h3>
-            <p>Complete los datos requeridos de forma organizada y precisa.</p>
+            <div class="form-head">
+              <div>
+                <h3 id="voterFormTitle">Registrar información</h3>
+                <p id="voterFormDescription">Complete los datos requeridos de forma organizada y precisa.</p>
+              </div>
+              <button type="button" class="text-btn hidden" id="cancelEditVoterBtn">Cancelar edición</button>
+            </div>
           </div>
 
           <form id="voterForm">
+            <input type="hidden" id="editingVoterId" />
+
             <div class="grid-2">
               <div class="input-group">
                 <label for="voterName">Nombre completo</label>
@@ -262,12 +271,7 @@
               </div>
             </div>
 
-            <div class="input-group">
-              <label for="voterNotes">Observaciones</label>
-              <textarea id="voterNotes" rows="4" placeholder="Información adicional"></textarea>
-            </div>
-
-            <button type="submit" class="primary-btn">Guardar registro</button>
+            <button type="submit" class="primary-btn" id="saveVoterBtn">Guardar registro</button>
           </form>
 
           <div class="status-message" id="voterMessage"></div>
@@ -356,7 +360,7 @@
           </div>
         </div>
 
-        <div class="table-wrap">
+        <div class="table-wrap table-wrap-fixed">
           <table>
             <thead>
               <tr>
@@ -372,6 +376,7 @@
                 <th>Rol</th>
                 <th>Zona</th>
                 <th>Fecha</th>
+                <th id="voterActionsHead">Acciones</th>
               </tr>
             </thead>
             <tbody id="votersTableBody"></tbody>
@@ -379,7 +384,7 @@
         </div>
       </section>
 
-      <section class="card users-card">
+      <section class="card users-card" id="usersSection">
         <div class="card-header row-between">
           <div>
             <h3>Usuarios del sistema</h3>
@@ -388,16 +393,18 @@
           <span class="soft-note" id="userPermissionsNote">Visualización según permisos</span>
         </div>
 
-        <div class="table-wrap">
+        <div class="table-wrap table-wrap-fixed">
           <table>
             <thead>
               <tr>
                 <th>Nombre</th>
                 <th>Usuario</th>
+                <th>Correo</th>
                 <th>Rol</th>
                 <th>Teléfono</th>
                 <th>Provincia</th>
                 <th>Zona</th>
+                <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
